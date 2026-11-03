@@ -30,7 +30,7 @@
         android:paddingBottom="6dp" />
 
     <TextView
-        android:id="@+id/statusShizuku"
+        android:id="@+id/statusDefault"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="15sp"
@@ -49,6 +49,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Grant Permissions"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnSetDefault"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Set as Default SMS App"
         android:layout_marginBottom="12dp" />
 
     <Button

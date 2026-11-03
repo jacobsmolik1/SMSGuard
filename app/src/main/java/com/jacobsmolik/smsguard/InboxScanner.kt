@@ -1,14 +1,14 @@
 package com.jacobsmolik.smsguard
 
 import android.content.Context
-import android.net.Uri
+import android.provider.Telephony
 import android.util.Log
 
 object InboxScanner {
 
     fun scan(context: Context): Int {
         val cursor = context.contentResolver.query(
-            Uri.parse("content://sms/inbox"),
+            Telephony.Sms.Inbox.CONTENT_URI,
             arrayOf("_id", "address", "body"),
             null, null, null
         ) ?: return 0
@@ -23,10 +23,14 @@ object InboxScanner {
                 if (ContactsHelper.isKnownContact(context, address)) continue
                 if (!FilterEngine.isMatch(context, body)) continue
 
-                Log.i("SMSGuard", "Scan-deleting id=$id from $address")
-                ShizukuHelper.deleteSmsById(id)
-                FilterLog.record(context, address, body)
-                deleted++
+                val rows = context.contentResolver.delete(
+                    Telephony.Sms.CONTENT_URI, "_id=?", arrayOf(id.toString())
+                )
+                Log.d("SMSGuard", "Scan delete id=$id: $rows row(s)")
+                if (rows > 0) {
+                    FilterLog.record(context, address, body)
+                    deleted++
+                }
             }
         }
         return deleted

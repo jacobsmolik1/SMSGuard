@@ -1,49 +1,79 @@
 package com.jacobsmolik.smsguard
 
 import android.content.BroadcastReceiver
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.provider.Telephony
 import android.util.Log
 
 class SmsReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
+        val action = intent.action ?: return
+        if (action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION &&
+            action != Telephony.Sms.Intents.SMS_DELIVER_ACTION) return
 
         val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
         if (messages.isNullOrEmpty()) return
 
         val sender = messages[0].displayOriginatingAddress ?: return
         val body = messages.joinToString("") { it.messageBody ?: "" }
+        val timestamp = messages[0].timestampMillis
+        val isDefault = isDefault(context)
 
-        if (ContactsHelper.isKnownContact(context, sender)) return
-        if (!FilterEngine.isMatch(context, body)) return
+        val isPolitical = !ContactsHelper.isKnownContact(context, sender) &&
+                FilterEngine.isMatch(context, body)
 
-        Log.i("SMSGuard", "Intercepted political SMS from $sender")
-        FilterLog.record(context, sender, body)
+        if (isPolitical) {
+            Log.i("SMSGuard", "Blocking political SMS from $sender (isDefault=$isDefault)")
+            FilterLog.record(context, sender, body)
+            if (isDefault) {
+                abortBroadcast()  // stop it reaching other receivers
+                // Don't write to DB → message never exists
+            } else {
+                // Best-effort delete after storage (works if we ARE the default app)
+                tryDeleteFromInbox(context, sender, body)
+            }
+            return
+        }
 
-        // Query DB for the actual _id (more reliable than deleting by address)
-        val id = findSmsId(context, sender, body)
-        if (id != null) {
-            ShizukuHelper.deleteSmsById(id)
-        } else {
-            // Fallback: delete all from this sender
-            ShizukuHelper.deleteSmsFromNumber(sender)
+        // Pass-through: if we're the default app we must write it to the DB ourselves
+        if (isDefault) {
+            writeToInbox(context, sender, body, timestamp)
         }
     }
 
-    private fun findSmsId(context: Context, address: String, body: String): Long? {
-        val cursor = context.contentResolver.query(
-            Uri.parse("content://sms/inbox"),
-            arrayOf("_id", "address", "body"),
-            "address=? AND body=?",
-            arrayOf(address, body),
-            "date DESC"
-        ) ?: return null
-        return cursor.use {
-            if (it.moveToFirst()) it.getLong(0) else null
+    private fun isDefault(context: Context) =
+        Telephony.Sms.getDefaultSmsPackage(context) == context.packageName
+
+    private fun writeToInbox(context: Context, sender: String, body: String, timestamp: Long) {
+        try {
+            context.contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, ContentValues().apply {
+                put(Telephony.Sms.ADDRESS, sender)
+                put(Telephony.Sms.BODY, body)
+                put(Telephony.Sms.DATE, timestamp)
+                put(Telephony.Sms.DATE_SENT, timestamp)
+                put(Telephony.Sms.READ, 0)
+                put(Telephony.Sms.SEEN, 0)
+                put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_INBOX)
+            })
+        } catch (e: Exception) {
+            Log.e("SMSGuard", "writeToInbox failed", e)
+        }
+    }
+
+    private fun tryDeleteFromInbox(context: Context, sender: String, body: String) {
+        try {
+            val cursor = context.contentResolver.query(
+                Telephony.Sms.Inbox.CONTENT_URI,
+                arrayOf("_id"), "address=? AND body=?",
+                arrayOf(sender, body), "date DESC"
+            ) ?: return
+            val id = cursor.use { if (it.moveToFirst()) it.getLong(0) else return }
+            context.contentResolver.delete(Telephony.Sms.CONTENT_URI, "_id=?", arrayOf(id.toString()))
+        } catch (e: Exception) {
+            Log.e("SMSGuard", "tryDeleteFromInbox failed", e)
         }
     }
 }
