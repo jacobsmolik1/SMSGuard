@@ -62,6 +62,14 @@
         android:id="@+id/btnLog"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="View Filter Log" />
+        android:text="View Filter Log"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnScan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Scan Inbox Now"
+        android:enabled="false" />
 
 </LinearLayout>

@@ -34,6 +34,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnPermissions.setOnClickListener { requestAllPermissions() }
         binding.btnKeywords.setOnClickListener { showKeywordsDialog() }
         binding.btnLog.setOnClickListener { showLogDialog() }
+        binding.btnScan.setOnClickListener { scanInbox() }
 
         refreshStatus()
     }
@@ -50,22 +51,29 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshStatus() {
         val hasSms = checkPerm(Manifest.permission.RECEIVE_SMS)
+        val hasReadSms = checkPerm(Manifest.permission.READ_SMS)
         val hasContacts = checkPerm(Manifest.permission.READ_CONTACTS)
         val shizukuOk = ShizukuHelper.isAvailable() && ShizukuHelper.hasPermission()
 
-        binding.statusSms.text = if (hasSms) "✓ SMS permission" else "✗ SMS permission (tap Grant)"
+        binding.statusSms.text = if (hasSms && hasReadSms) "✓ SMS permissions" else "✗ SMS permissions (tap Grant)"
         binding.statusContacts.text = if (hasContacts) "✓ Contacts permission" else "✗ Contacts permission (tap Grant)"
         binding.statusShizuku.text = if (shizukuOk) "✓ Shizuku connected" else "✗ Shizuku — start it first, then tap Grant"
         binding.filterCount.text = "Messages filtered: ${FilterLog.getCount(this)}"
-        binding.guardStatus.text = if (hasSms && hasContacts && shizukuOk) "ACTIVE" else "SETUP REQUIRED"
+
+        val allReady = hasSms && hasReadSms && hasContacts && shizukuOk
+        binding.guardStatus.text = if (allReady) "ACTIVE" else "SETUP REQUIRED"
+        binding.btnScan.isEnabled = hasReadSms && shizukuOk
     }
 
     private fun checkPerm(p: String) =
         ContextCompat.checkSelfPermission(this, p) == PackageManager.PERMISSION_GRANTED
 
     private fun requestAllPermissions() {
-        val needed = listOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_CONTACTS)
-            .filter { !checkPerm(it) }
+        val needed = listOf(
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.READ_SMS,
+            Manifest.permission.READ_CONTACTS
+        ).filter { !checkPerm(it) }
         if (needed.isNotEmpty())
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), RC_PERMISSIONS)
 
@@ -80,6 +88,19 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(rc: Int, perms: Array<out String>, results: IntArray) {
         super.onRequestPermissionsResult(rc, perms, results)
         refreshStatus()
+    }
+
+    private fun scanInbox() {
+        binding.btnScan.isEnabled = false
+        binding.btnScan.text = "Scanning…"
+        Thread {
+            val count = InboxScanner.scan(this)
+            runOnUiThread {
+                refreshStatus()
+                binding.btnScan.text = "Scan Inbox Now"
+                Toast.makeText(this, "Deleted $count political message${if (count != 1) "s" else ""}", Toast.LENGTH_LONG).show()
+            }
+        }.start()
     }
 
     private fun showKeywordsDialog() {
