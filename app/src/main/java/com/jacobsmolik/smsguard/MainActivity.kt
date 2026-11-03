@@ -19,8 +19,10 @@ class MainActivity : AppCompatActivity() {
     private val RC_PERMISSIONS = 1002
 
     private val shizukuListener = Shizuku.OnRequestPermissionResultListener { _, result ->
-        if (result == PackageManager.PERMISSION_GRANTED)
+        if (result == PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(this, "Shizuku access granted", Toast.LENGTH_SHORT).show()
+            ShizukuHelper.bindService(this)
+        }
         refreshStatus()
     }
 
@@ -30,6 +32,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         Shizuku.addRequestPermissionResultListener(shizukuListener)
+        if (ShizukuHelper.hasPermission()) ShizukuHelper.bindService(this)
 
         binding.btnPermissions.setOnClickListener { requestAllPermissions() }
         binding.btnKeywords.setOnClickListener { showKeywordsDialog() }
@@ -47,6 +50,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         Shizuku.removeRequestPermissionResultListener(shizukuListener)
+        ShizukuHelper.unbindService(this)
     }
 
     private fun refreshStatus() {
