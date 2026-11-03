@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:id="@+id/guardStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="SETUP REQUIRED"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:paddingBottom="28dp" />
+
+    <TextView
+        android:id="@+id/statusSms"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="15sp"
+        android:paddingBottom="6dp" />
+
+    <TextView
+        android:id="@+id/statusContacts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="15sp"
+        android:paddingBottom="6dp" />
+
+    <TextView
+        android:id="@+id/statusShizuku"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="15sp"
+        android:paddingBottom="28dp" />
+
+    <TextView
+        android:id="@+id/filterCount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Messages filtered: 0"
+        android:textSize="16sp"
+        android:paddingBottom="32dp" />
+
+    <Button
+        android:id="@+id/btnPermissions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Grant Permissions"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnKeywords"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Manage Keywords"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnLog"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View Filter Log" />
+
+</LinearLayout>
