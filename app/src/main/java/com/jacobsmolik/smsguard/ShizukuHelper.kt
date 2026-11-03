@@ -27,12 +27,11 @@ object ShizukuHelper {
         }
         try {
             val safe = number.replace("'", "\\'")
-            val process = Shizuku.newProcess(
-                arrayOf("content", "delete",
-                    "--uri", "content://sms",
-                    "--where", "address='$safe'"),
-                null, null
-            )
+            val cmd = arrayOf("content", "delete", "--uri", "content://sms", "--where", "address='$safe'")
+            // newProcess is public at bytecode level but hidden from Kotlin's type system in API 13
+            val process = Shizuku::class.java
+                .getMethod("newProcess", Array<String>::class.java, Array<String>::class.java, String::class.java)
+                .invoke(null, cmd, null, null) as Process
             val exit = process.waitFor()
             Log.d("SMSGuard", "Deleted SMS from $number (exit=$exit)")
         } catch (e: Exception) {

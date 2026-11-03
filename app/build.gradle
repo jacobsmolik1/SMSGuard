@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace 'com.jacobsmolik.smsguard'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.jacobsmolik.smsguard"
         minSdk 26
-        targetSdk 34
+        targetSdk 35
         versionCode 1
         versionName "1.0"
     }
@@ -32,6 +32,18 @@ android {
 
     buildFeatures {
         viewBinding true
+    }
+
+    androidComponents {
+        onVariants(selector().all()) { variant ->
+            variant.experimentalProperties.put(
+                "android.experimental.useAapt2FromMaven", false
+            )
+        }
+    }
+
+    aaptOptions {
+        cruncherEnabled = false
     }
 }
 
